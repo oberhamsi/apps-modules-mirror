@@ -17,30 +17,56 @@
 /**
  * @fileoverview Adds useful methods to the JavaScript Object type.
  * <br /><br />
- * To use this optional module, its repository needs to be added to the 
+ * To use this optional module, its repository needs to be added to the
  * application, for example by calling app.addRepository('modules/core/Object.js')
  */
 
 /**
- * copy the properties of an object into
- * a new object
- * @param Object the source object
- * @param Object the (optional) target object
- * @return Object the resulting object
+ * Copies the properties of this object into a clone.
+ * @param {Object} clone The optional target object
+ * @param {Boolean} recursive If true child objects are cloned as well, otherwise
+ * the clone contains references to the child objects
+ * @returns The resulting object
  */
 Object.prototype.clone = function(clone, recursive) {
-   if (!clone)
-      clone = new this.constructor();
-   var value;
-   for (var propName in this) {
-      value = this[propName];
-      if (recursive && (value.constructor == HopObject || value.constructor == Object)) {
-         clone[propName] = value.clone(new value.constructor(), recursive);
-      } else {
-         clone[propName] = value;
-      }
-   }
-   return clone;
+
+    var getValue = function(value, recursive) {
+        if (recursive !== true || value == null
+                || (typeof (value) !== "object" && typeof (value) !== "function")) {
+            return value;
+        }
+        return value.clone(null, recursive);
+    };
+
+    if (typeof (this) === "object") {
+        if (this === null) {
+            return null;
+        }
+        switch (this.constructor) {
+            case String:
+            case Number:
+            case Boolean:
+            case Date:
+                return new this.constructor(this.valueOf());
+
+            case Array:
+                return this.map(function(value) {
+                    return getValue(value, recursive);
+                });
+
+            default:
+                if (clone == null) {
+                    clone = new this.constructor();
+                }
+                for ( var propName in this) {
+                    clone[propName] = getValue(this[propName], recursive);
+                }
+                return clone;
+        }
+    } else if (typeof (this) === "function" && this.constructor === RegExp) {
+        return new RegExp(this.valueOf());
+    }
+    return this;
 };
 
 
